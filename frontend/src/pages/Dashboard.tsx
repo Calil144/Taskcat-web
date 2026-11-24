@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Project, ArchivedProject } from "../types/project";
 import { getProjects, getArchivedProjects } from "../services/projectService";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/Dashboard.css";
 export default function Dashboard() {
-
-const userId = "b5d53996-f0ea-4832-a1ee-a59b0da6d49e";
+    const { session } = useAuth();
+    const token = session?.accessToken ?? "";
 
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
@@ -14,13 +15,18 @@ const userId = "b5d53996-f0ea-4832-a1ee-a59b0da6d49e";
     
     useEffect(() => {
     async function carregarProjetos() {
+        if (!token) {
+            setLoading(false);
+            setError("Sessão expirada. Entre novamente.");
+            return;
+        }
         try {
         setLoading(true);
         setError("");
 
         const [data, archivedData] = await Promise.all([
-            getProjects(userId),
-            getArchivedProjects(userId),
+            getProjects(token),
+            getArchivedProjects(token),
         ])
 
         setProjects(data);
@@ -35,7 +41,7 @@ const userId = "b5d53996-f0ea-4832-a1ee-a59b0da6d49e";
     }
 
   carregarProjetos();
-}, [userId]);
+    }, [token]);
 
     const activeCount = projects.length;
     const archivedCount = archivedProjects.length;

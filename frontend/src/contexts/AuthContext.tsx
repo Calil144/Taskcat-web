@@ -1,37 +1,52 @@
-import {createContext,useContext,useState,type ReactNode} from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
+
+export interface AuthSession {
+  id: string;
+  username: string;
+  email: string;
+  accessToken: string;
+  refreshToken: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  session: AuthSession | null;
+  login: (session: AuthSession) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+const SESSION_KEY = "taskcat-session";
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({
-  children
-}: {
-  children: ReactNode;
-}) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem("isAuthenticated") === "true";
-  });
+function readStoredSession(): AuthSession | null {
+  const storedSession = sessionStorage.getItem(SESSION_KEY);
 
-  function login() {
-    sessionStorage.setItem("isAuthenticated", "true");
-    setIsAuthenticated(true);
+  if (!storedSession) return null;
+
+  try {
+    const session = JSON.parse(storedSession) as AuthSession;
+    return session.accessToken && session.id ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<AuthSession | null>(readStoredSession);
+
+  function login(newSession: AuthSession) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    setSession(newSession);
   }
 
   function logout() {
-    sessionStorage.removeItem("isAuthenticated");
-    setIsAuthenticated(false);
+    sessionStorage.removeItem(SESSION_KEY);
+    setSession(null);
   }
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, login, logout }}
+      value={{ isAuthenticated: Boolean(session), session, login, logout }}
     >
       {children}
     </AuthContext.Provider>
