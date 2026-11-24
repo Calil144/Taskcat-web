@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Auth.css";
+import { createUser } from "../services/userService";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -9,7 +10,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -38,15 +39,26 @@ export default function Register() {
       return;
     }
 
-    console.log("Cadastro validado:", {
-      username,
-      email,
-    });
+
+    try {
+      await createUser({
+        username,
+        email,
+        password,
+      });
+
+      alert("Usuário cadastrado com sucesso!");
+    } catch (error) {
+      console.error(error);
+      setError("Não foi possível cadastrar o usuário.");
+    }
+
   }
 
   return (
     <div className="auth-container">
       <form onSubmit={handleSubmit}>
+        <h1>TASKCAT</h1>
         <h1>Cadastro</h1>
 
         <label htmlFor="username">Nome de usuário</label>
