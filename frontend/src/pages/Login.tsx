@@ -32,6 +32,7 @@ export default function Login() {
   return (
     <div className="auth-container">
       <form onSubmit={handleSubmit}>
+        <h1>TASKCAT</h1>
         <h1>Login</h1>
 
         <label htmlFor="email">E-mail</label>
