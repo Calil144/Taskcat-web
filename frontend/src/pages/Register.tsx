@@ -9,6 +9,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [createdUserId, setCreatedUserId] = useState("");
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,12 +42,13 @@ export default function Register() {
 
 
     try {
-      await createUser({
+      const createdUser = await createUser({
         username,
         email,
         password,
       });
 
+      setCreatedUserId(createdUser?.id ?? "");
       alert("Usuário cadastrado com sucesso!");
     } catch (error) {
       console.error(error);
@@ -98,6 +100,12 @@ export default function Register() {
         />
 
         {error && <p role="alert">{error}</p>}
+        {createdUserId && (
+          <p role="status">
+            Seu UUID é <code>{createdUserId}</code>. Compartilhe esse código para
+            que possam adicionar você a um projeto.
+          </p>
+        )}
 
         <button type="submit">Cadastrar</button>
 
