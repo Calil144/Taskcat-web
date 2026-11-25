@@ -13,6 +13,7 @@ interface AuthContextType {
   session: AuthSession | null;
   login: (session: AuthSession) => void;
   logout: () => void;
+  updateSession: (data: Pick<AuthSession, "username" | "email">) => void;
 }
 
 const SESSION_KEY = "taskcat-session";
@@ -44,9 +45,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }
 
+  function updateSession(data: Pick<AuthSession, "username" | "email">) {
+    setSession((currentSession) => {
+      if (!currentSession) return null;
+
+      const updatedSession = {
+        ...currentSession,
+        ...data,
+      };
+
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
+
+      return updatedSession;
+    });
+  }
+
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated: Boolean(session), session, login, logout }}
+      value={{
+        isAuthenticated: Boolean(session),
+        session,
+        login,
+        logout,
+        updateSession,
+      }}
     >
       {children}
     </AuthContext.Provider>
