@@ -4,6 +4,7 @@ import {
   addProjectMember,
   archiveProject,
   createProject,
+  deleteProject,
   getArchivedProjects,
   getProjectDetails,
   getProjectMembers,
@@ -32,6 +33,7 @@ export default function Projects() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [archiveConfirmationId, setArchiveConfirmationId] = useState("");
   const [restoreConfirmationId, setRestoreConfirmationId] = useState("");
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState("");
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState("");
   const [memberUserId, setMemberUserId] = useState("");
@@ -227,6 +229,30 @@ export default function Projects() {
     }
   }
 
+  async function handleDeleteProject(project: { id: string; name: string }) {
+    try {
+      setSaving(true);
+      setError("");
+      await deleteProject(token, project.id);
+      setDeleteConfirmationId("");
+      setNotice(`Projeto "${project.name}" excluído permanentemente.`);
+      setSelectedProjectId((current) => current === project.id ? "" : current);
+      if (editingProjectId === project.id) {
+        setEditingProjectId(null);
+        setProjectName("");
+      }
+      await loadProjects();
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Não foi possível excluir o projeto."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="projects-page">
       <header className="projects-heading">
@@ -308,10 +334,23 @@ export default function Projects() {
                     className="archive-button"
                     onClick={() => {
                       setError("");
+                      setDeleteConfirmationId("");
                       setArchiveConfirmationId(project.id);
                     }}
                   >
                     Arquivar
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-button"
+                    onClick={() => {
+                      setError("");
+                      setNotice("");
+                      setArchiveConfirmationId("");
+                      setDeleteConfirmationId(project.id);
+                    }}
+                  >
+                    Excluir
                   </button>
                 </div>
                 {archiveConfirmationId === project.id && (
@@ -330,6 +369,27 @@ export default function Projects() {
                       className="secondary-button"
                       disabled={saving}
                       onClick={() => setArchiveConfirmationId("")}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+                {deleteConfirmationId === project.id && (
+                  <div className="delete-confirmation" role="group" aria-label={`Confirmar exclusão de ${project.name}`}>
+                    <p>Excluir “{project.name}” permanentemente? Essa ação não pode ser desfeita.</p>
+                    <button
+                      type="button"
+                      className="delete-button"
+                      disabled={saving}
+                      onClick={() => void handleDeleteProject(project)}
+                    >
+                      {saving ? "Excluindo..." : "Confirmar exclusão"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={saving}
+                      onClick={() => setDeleteConfirmationId("")}
                     >
                       Cancelar
                     </button>
@@ -357,6 +417,7 @@ export default function Projects() {
                     Arquivado em {new Date(project.archivedAt).toLocaleDateString("pt-BR")}
                   </p>
                 </div>
+                <div className="project-item-actions">
                 {restoreConfirmationId === project.id ? (
                   <div className="restore-confirmation" role="group" aria-label={`Confirmar restauração de ${project.name}`}>
                     <p>Restaurar “{project.name}” e seus quadros e tarefas?</p>
@@ -387,6 +448,40 @@ export default function Projects() {
                   >
                     Restaurar
                   </button>
+                )}
+                <button
+                  type="button"
+                  className="delete-button"
+                  onClick={() => {
+                    setError("");
+                    setNotice("");
+                    setRestoreConfirmationId("");
+                    setDeleteConfirmationId(project.id);
+                  }}
+                >
+                  Excluir
+                </button>
+                </div>
+                {deleteConfirmationId === project.id && (
+                  <div className="delete-confirmation" role="group" aria-label={`Confirmar exclusão de ${project.name}`}>
+                    <p>Excluir “{project.name}” permanentemente? Essa ação não pode ser desfeita.</p>
+                    <button
+                      type="button"
+                      className="delete-button"
+                      disabled={saving}
+                      onClick={() => void handleDeleteProject(project)}
+                    >
+                      {saving ? "Excluindo..." : "Confirmar exclusão"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={saving}
+                      onClick={() => setDeleteConfirmationId("")}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

@@ -122,6 +122,21 @@ export async function mockApiRequest(
     return jsonResponse({ id: archivedProject.id });
   }
 
+  const deleteMatch = path.match(/^\/api\/v1\/projects\/([^/]+)$/);
+  if (deleteMatch && method === "DELETE") {
+    const projectId = deleteMatch[1];
+    const projectIndex = projects.findIndex((entry) => entry.id === projectId);
+    const archivedIndex = archivedProjects.findIndex((entry) => entry.id === projectId);
+    if (projectIndex < 0 && archivedIndex < 0) {
+      return jsonResponse({ message: "Projeto mock não encontrado." }, 404);
+    }
+    if (projectIndex >= 0) projects.splice(projectIndex, 1);
+    if (archivedIndex >= 0) archivedProjects.splice(archivedIndex, 1);
+    projectMembers.delete(projectId);
+    archivedProjectDetails.delete(projectId);
+    return jsonResponse({ id: projectId });
+  }
+
   if (path === "/api/v1/projects" && method === "POST") {
     const { name } = parseRequestBody<{ name: string }>(init);
     const project: Project = {

@@ -87,6 +87,14 @@ export function restoreProject(token: string, projectId: string): Promise<void> 
   );
 }
 
+export function deleteProject(token: string, projectId: string): Promise<void> {
+  return requestApi<void>(
+    `${PROJECTS_URL}/${projectId}`,
+    { method: "DELETE", headers: authorizationHeaders(token) },
+    "Não foi possível excluir o projeto.",
+  );
+}
+
 export function getProjectMembers(
   token: string,
   projectId: string,
