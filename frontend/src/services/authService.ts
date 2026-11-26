@@ -1,4 +1,5 @@
 import type { AuthSession } from "../contexts/AuthContext";
+import { requestApi } from "./apiClient";
 
 interface LoginResponse extends AuthSession {
   tokenType: string;
@@ -7,19 +8,18 @@ interface LoginResponse extends AuthSession {
 
 export async function authenticateUser(
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthSession> {
-  const response = await fetch("/api/v1/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  const result = await requestApi<LoginResponse>(
+    "/api/v1/auth/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    },
+    "Não foi possível entrar.",
+  );
 
-  if (!response.ok) {
-    throw new Error(await readApiError(response, "Não foi possível entrar."));
-  }
-
-  const result = (await response.json()) as LoginResponse;
   return {
     id: result.id,
     username: result.username,
@@ -27,20 +27,4 @@ export async function authenticateUser(
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
   };
-}
-
-export async function readApiError(
-  response: Response,
-  fallback: string
-): Promise<string> {
-  try {
-    const body = (await response.json()) as {
-      message?: string;
-      detail?: string;
-      error?: string;
-    };
-    return body.message ?? body.detail ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
 }

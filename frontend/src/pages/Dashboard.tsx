@@ -34,7 +34,11 @@ export default function Dashboard() {
 
         } catch (error) {
         console.error(error);
-        setError("Não foi possível carregar os projetos.");
+        setError(
+            error instanceof Error
+                ? error.message
+                : "Não foi possível carregar os projetos."
+        );
         } finally {
         setLoading(false);
         }
