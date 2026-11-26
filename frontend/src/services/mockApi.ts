@@ -29,6 +29,7 @@ const projects: Project[] = [
   },
 ];
 const archivedProjects: ArchivedProject[] = [];
+const archivedProjectDetails = new Map<string, Project>();
 const projectMembers = new Map<string, ProjectMember[]>([
   ["mock-project-001", [{
     userId: DEMO_USER.id,
@@ -106,6 +107,21 @@ export async function mockApiRequest(
     return jsonResponse(archivedProjects);
   }
 
+  const restoreMatch = path.match(/^\/api\/v1\/projects\/([^/]+)\/restore$/);
+  if (restoreMatch && method === "PATCH") {
+    const projectId = restoreMatch[1];
+    const archivedIndex = archivedProjects.findIndex((entry) => entry.id === projectId);
+    if (archivedIndex < 0) {
+      return jsonResponse({ message: "Projeto mock arquivado não encontrado." }, 404);
+    }
+
+    const [archivedProject] = archivedProjects.splice(archivedIndex, 1);
+    const project = archivedProjectDetails.get(projectId);
+    if (project) projects.push(project);
+    archivedProjectDetails.delete(projectId);
+    return jsonResponse({ id: archivedProject.id });
+  }
+
   if (path === "/api/v1/projects" && method === "POST") {
     const { name } = parseRequestBody<{ name: string }>(init);
     const project: Project = {
@@ -150,6 +166,7 @@ export async function mockApiRequest(
     if (projectMatch[2] && method === "PATCH") {
       if (projectIndex < 0) return jsonResponse({ message: "Projeto mock não encontrado." }, 404);
       const [project] = projects.splice(projectIndex, 1);
+      archivedProjectDetails.set(project.id, project);
       archivedProjects.push({ ...project, archivedAt: new Date().toISOString() });
       return jsonResponse(undefined, 204);
     }

@@ -4,12 +4,15 @@ import {
   addProjectMember,
   archiveProject,
   createProject,
+  getArchivedProjects,
   getProjectDetails,
   getProjectMembers,
   getProjects,
+  restoreProject,
   updateProject,
 } from "../services/projectService";
 import type {
+  ArchivedProject,
   Project,
   ProjectDetails,
   ProjectMember,
@@ -23,10 +26,12 @@ export default function Projects() {
   const { session } = useAuth();
   const token = session?.accessToken ?? "";
   const [projects, setProjects] = useState<Project[]>([]);
+  const [archivedProjects, setArchivedProjects] = useState<ArchivedProject[]>([]);
   const [projectDetails, setProjectDetails] = useState<ProjectDetails | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [archiveConfirmationId, setArchiveConfirmationId] = useState("");
+  const [restoreConfirmationId, setRestoreConfirmationId] = useState("");
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState("");
   const [memberUserId, setMemberUserId] = useState("");
@@ -43,7 +48,12 @@ export default function Projects() {
     try {
       setLoading(true);
       setError("");
-      setProjects(await getProjects(token));
+      const [active, archived] = await Promise.all([
+        getProjects(token),
+        getArchivedProjects(token),
+      ]);
+      setProjects(active);
+      setArchivedProjects(archived);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -198,6 +208,25 @@ export default function Projects() {
     }
   }
 
+  async function handleRestoreProject(project: ArchivedProject) {
+    try {
+      setSaving(true);
+      setError("");
+      await restoreProject(token, project.id);
+      setRestoreConfirmationId("");
+      setNotice(`Projeto "${project.name}" restaurado com sucesso.`);
+      await loadProjects();
+    } catch (restoreError) {
+      setError(
+        restoreError instanceof Error
+          ? restoreError.message
+          : "Não foi possível restaurar o projeto."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="projects-page">
       <header className="projects-heading">
@@ -305,6 +334,59 @@ export default function Projects() {
                       Cancelar
                     </button>
                   </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="project-list-section" aria-labelledby="archived-project-list-title">
+        <h2 id="archived-project-list-title">Projetos arquivados</h2>
+        {loading ? (
+          <p>Carregando projetos arquivados...</p>
+        ) : archivedProjects.length === 0 ? (
+          <p>Você não possui projetos arquivados.</p>
+        ) : (
+          <ul className="project-list">
+            {archivedProjects.map((project) => (
+              <li className="project-list-item" key={project.id}>
+                <div>
+                  <h3>{project.name}</h3>
+                  <p>
+                    Arquivado em {new Date(project.archivedAt).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+                {restoreConfirmationId === project.id ? (
+                  <div className="restore-confirmation" role="group" aria-label={`Confirmar restauração de ${project.name}`}>
+                    <p>Restaurar “{project.name}” e seus quadros e tarefas?</p>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void handleRestoreProject(project)}
+                    >
+                      {saving ? "Restaurando..." : "Confirmar restauração"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={saving}
+                      onClick={() => setRestoreConfirmationId("")}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setNotice("");
+                      setRestoreConfirmationId(project.id);
+                    }}
+                  >
+                    Restaurar
+                  </button>
                 )}
               </li>
             ))}
