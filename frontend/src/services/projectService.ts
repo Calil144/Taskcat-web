@@ -79,6 +79,14 @@ export function archiveProject(token: string, projectId: string): Promise<void> 
   );
 }
 
+export function restoreProject(token: string, projectId: string): Promise<void> {
+  return requestApi<void>(
+    `${PROJECTS_URL}/${projectId}/restore`,
+    { method: "PATCH", headers: authorizationHeaders(token) },
+    "Não foi possível restaurar o projeto.",
+  );
+}
+
 export function getProjectMembers(
   token: string,
   projectId: string,
