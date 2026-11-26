@@ -52,7 +52,11 @@ export default function Register() {
       alert("Usuário cadastrado com sucesso!");
     } catch (error) {
       console.error(error);
-      setError("Não foi possível cadastrar o usuário.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cadastrar o usuário.",
+      );
     }
 
   }
